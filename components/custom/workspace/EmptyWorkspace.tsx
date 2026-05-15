@@ -13,7 +13,7 @@ const EmptyWorkspace = () => {
         cases
       </p>
       <Button variant="default" className="mt-4">
-        <Link className="h-4 w-4" /> Connect repo
+        <Link className="h-4 w-4 mr-1" /> Connect repo
       </Button>
     </div>
   );

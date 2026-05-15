@@ -8,6 +8,7 @@ import React, { useCallback, useContext, useEffect, useState } from "react";
 import EmptyWorkspace from "./EmptyWorkspace";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import RepoDialog from "./RepoDialog";
 
 const WorkspaceBody = () => {
   const { userDetails } = useContext(UserDetailsContext);
@@ -21,7 +22,6 @@ const WorkspaceBody = () => {
   const handleGetGithubToken = useCallback(async () => {
     try {
       const { data } = await axios.get("/api/github/token");
-      console.log(data);
       setGithubToken(data.accessToken);
     } catch (error) {
       console.error(error);
@@ -51,9 +51,13 @@ const WorkspaceBody = () => {
           />
           <h3 className="text-lg font-bold">Connect github & add repository</h3>
         </div>
-        <Button variant="default" onClick={handleAddRepository}>
-          Install
-        </Button>
+        {!githubToken ? (
+          <Button variant="default" onClick={handleAddRepository}>
+            Connect github
+          </Button>
+        ) : (
+          <RepoDialog />
+        )}
       </Card>
 
       <Card>
