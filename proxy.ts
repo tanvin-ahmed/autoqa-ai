@@ -1,20 +1,18 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
-import type { NextFetchEvent, NextRequest } from "next/server";
-import { isClerkConfigured } from "@/lib/env/clerk";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const runClerk = isClerkConfigured() ? clerkMiddleware() : null;
+const isProtectedRoute = createRouteMatcher(["/workspace(.*)"]);
 
-export default function proxy(request: NextRequest, event: NextFetchEvent) {
-  if (runClerk) {
-    return runClerk(request, event);
-  }
-  return NextResponse.next();
-}
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) await auth.protect();
+});
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html|css|js|gif|svg|jpg|jpeg|png|woff|woff2|ico|csv|docx|xlsx|zip|webmanifest)).*)",
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
     "/(api|trpc)(.*)",
+    // Always run for Clerk-specific frontend API routes
+    "/__clerk/(.*)",
   ],
 };
