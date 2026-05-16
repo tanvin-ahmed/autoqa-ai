@@ -31,6 +31,8 @@ export const repositories = pgTable("repositories", {
   owner: text("owner").notNull(),
   description: text("description").notNull(),
   language: text("language").notNull(),
+  targetDomain: text("target_domain").default("http://localhost:3000"),
+  globalInstruction: text("global_instruction"),
 });
 
 export const TestCasesTable = pgTable("test_cases", {

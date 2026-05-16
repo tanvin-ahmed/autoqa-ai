@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { isClerkConfigured } from "@/lib/env/clerk";
 import Provider from "./provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Next.js Premium Startup Boilerplate",
@@ -31,6 +32,7 @@ export default async function RootLayout({
         >
           <Provider>{children}</Provider>
         </ThemeProvider>
+        <Toaster />
       </body>
     </html>
   );

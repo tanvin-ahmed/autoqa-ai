@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { UserDetailsContext } from "@/context/userDetailsContext";
 import Image from "next/image";
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import EmptyWorkspace from "./EmptyWorkspace";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -130,7 +130,14 @@ const WorkspaceBody = () => {
         ) : userRepoList.length === 0 ? (
           <EmptyWorkspace />
         ) : (
-          <UserRepoList repoList={userRepoList} />
+          <UserRepoList
+            repoList={userRepoList}
+            onRepoUpdated={(updated) =>
+              setUserRepoList((prev) =>
+                prev.map((r) => (r.id === updated.id ? updated : r)),
+              )
+            }
+          />
         )}
       </div>
     </section>

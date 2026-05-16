@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import {
   CheckCircle2,
+  Link2Icon,
   ListChecks,
   Loader2,
   Sparkles,
@@ -22,6 +23,7 @@ import StatusCard from "./StatusCard";
 import TestCaseList from "./TestCaseList";
 import { UserDetailsContext } from "@/context/userDetailsContext";
 import axios from "axios";
+import RepoSettingsDialog from "./RepoSettingsDialog";
 
 type GenerateTestCasesResponse = {
   success?: boolean;
@@ -34,7 +36,12 @@ function repoKeyFromRepository(repo: Repository) {
   return String(repo.repoId);
 }
 
-const UserRepoList = ({ repoList }: { repoList: Repository[] }) => {
+type UserRepoListProps = {
+  repoList: Repository[];
+  onRepoUpdated?: (repo: Repository) => void;
+};
+
+const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
   const { userDetails } = useContext(UserDetailsContext);
   /** DB `repositories.id` for the row currently running generation (only one at a time). */
   const [generatingRepoId, setGeneratingRepoId] = useState<number | null>(null);
@@ -69,6 +76,21 @@ const UserRepoList = ({ repoList }: { repoList: Repository[] }) => {
           [repoIdParam]: false,
         }));
       }
+    },
+    [],
+  );
+
+  const patchTestCaseInRepo = useCallback(
+    (repoKey: string, updated: TestCase) => {
+      setTestCasesByRepoId((prev) => {
+        const list = prev[repoKey];
+        if (!list) return prev;
+        const idx = list.findIndex((t) => t.id === updated.id);
+        if (idx === -1) return prev;
+        const nextList = [...list];
+        nextList[idx] = updated;
+        return { ...prev, [repoKey]: nextList };
+      });
     },
     [],
   );
@@ -153,6 +175,27 @@ const UserRepoList = ({ repoList }: { repoList: Repository[] }) => {
                 </div>
               </AccordionTrigger>
               <AccordionContent>
+                <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
+                  <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:items-center">
+                    <Link2Icon
+                      className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground sm:mt-0"
+                      aria-hidden
+                    />
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="text-xs font-medium text-muted-foreground sm:text-sm">
+                        Target domain
+                      </p>
+                      <p className="text-primary break-all text-sm font-medium leading-snug text-foreground sm:text-base sm:font-normal">
+                        {repo.targetDomain ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <RepoSettingsDialog
+                    repo={repo}
+                    userId={userDetails?.id}
+                    onUpdated={onRepoUpdated}
+                  />
+                </div>
                 <div className="space-y-5 pt-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <StatusCard
@@ -216,6 +259,9 @@ const UserRepoList = ({ repoList }: { repoList: Repository[] }) => {
                       testCases={cases}
                       onRefresh={(rid) =>
                         void fetchTestCases(rid, { invalidate: true })
+                      }
+                      onTestCaseUpdated={(updated) =>
+                        patchTestCaseInRepo(key, updated)
                       }
                     />
                   ) : (

@@ -5,16 +5,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Play, RefreshCcw, Route, SettingsIcon } from "lucide-react";
+import { Play, RefreshCcw, Route } from "lucide-react";
 import { useState } from "react";
+import TestcaseSettingsDialog from "./TestcaseSettingsDialog";
 
 type TestCaseListProps = {
   repoId: string;
   testCases: TestCase[];
   onRefresh: (repoId: string) => void | Promise<void>;
+  onTestCaseUpdated?: (updated: TestCase) => void;
 };
 
-const TestCaseList = ({ repoId, testCases, onRefresh }: TestCaseListProps) => {
+const TestCaseList = ({
+  repoId,
+  testCases,
+  onRefresh,
+  onTestCaseUpdated,
+}: TestCaseListProps) => {
   const [selectedTestCases, setSelectedTestCases] = useState<TestCase[]>([]);
 
   const selectedCount = selectedTestCases.length;
@@ -27,6 +34,13 @@ const TestCaseList = ({ repoId, testCases, onRefresh }: TestCaseListProps) => {
       }
       return prev.filter((s) => s.id !== tc.id);
     });
+  }
+
+  function handleTestCaseUpdated(updated: TestCase) {
+    onTestCaseUpdated?.(updated);
+    setSelectedTestCases((prev) =>
+      prev.map((s) => (s.id === updated.id ? updated : s)),
+    );
   }
 
   return (
@@ -87,15 +101,10 @@ const TestCaseList = ({ repoId, testCases, onRefresh }: TestCaseListProps) => {
                   isSelected && "bg-muted/25",
                 )}
               >
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="absolute right-2 top-3 z-10 h-9 w-9 text-muted-foreground sm:right-3 sm:top-4"
-                  aria-label="Test case settings"
-                >
-                  <SettingsIcon className="h-4 w-4" aria-hidden />
-                </Button>
+                <TestcaseSettingsDialog
+                  testCase={tc}
+                  onUpdated={handleTestCaseUpdated}
+                />
 
                 <div className="flex gap-3 px-3 py-4 pr-11 sm:px-5 sm:py-5 sm:pr-14">
                   <Checkbox
