@@ -18,7 +18,11 @@ import { cn } from "@/lib/utils";
 import { GitBranch, Lock, Search } from "lucide-react";
 import axios from "axios";
 
-const RepoDialog = () => {
+type RepoDialogProps = {
+  onRepoAdded?: () => void | Promise<void>;
+};
+
+const RepoDialog = ({ onRepoAdded }: RepoDialogProps) => {
   const { userDetails } = useContext(UserDetailsContext);
   const [open, setOpen] = useState(false);
   const [repos, setRepos] = useState<TGitHubRepoListItem[]>([]);
@@ -86,6 +90,7 @@ const RepoDialog = () => {
         description: selectedRepo.description ?? "",
         language: selectedRepo.language ?? "",
       });
+      await onRepoAdded?.();
       handleOpenChange(false);
     } catch (e) {
       if (axios.isAxiosError(e)) {

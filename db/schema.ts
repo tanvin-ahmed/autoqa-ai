@@ -33,3 +33,4 @@ export const repositories = pgTable("repositories", {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Repository = typeof repositories.$inferSelect;

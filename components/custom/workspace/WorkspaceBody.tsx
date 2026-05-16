@@ -8,12 +8,27 @@ import React, { useCallback, useContext, useEffect, useState } from "react";
 import EmptyWorkspace from "./EmptyWorkspace";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import RepoDialog from "./RepoDialog";
+import type { Repository } from "@/db/schema";
+import { Loader2 } from "lucide-react";
+import UserRepoList from "./UserRepoList";
 
 const WorkspaceBody = () => {
   const { userDetails } = useContext(UserDetailsContext);
+  const { isLoaded: clerkLoaded, userId: clerkUserId } = useAuth();
   const router = useRouter();
   const [githubToken, setGithubToken] = useState<string | null>(null);
+  const [userRepoList, setUserRepoList] = useState<Repository[]>([]);
+  /** False until GET /api/github/user-repo finishes for the current `userDetails.id` (initial load only). */
+  const [reposReady, setReposReady] = useState(false);
+
+  const userIdNum = userDetails?.id;
+
+  const showRepoSectionLoader =
+    !clerkLoaded ||
+    (Boolean(clerkUserId) && userDetails === null) ||
+    (userIdNum != null && !reposReady);
 
   const handleAddRepository = () => {
     router.push("/api/github");
@@ -28,9 +43,46 @@ const WorkspaceBody = () => {
     }
   }, []);
 
+  const handleGetUserRepos = useCallback(
+    async (background = false) => {
+      const id = userDetails?.id;
+      if (id == null) return;
+
+      try {
+        const { data } = await axios.get<Repository[]>(
+          "/api/github/user-repo",
+          {
+            params: { userId: id },
+          },
+        );
+        setUserRepoList(data);
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          setUserRepoList([]);
+        } else {
+          console.error(error);
+          setUserRepoList([]);
+        }
+      } finally {
+        if (!background) setReposReady(true);
+      }
+    },
+    [userDetails?.id],
+  );
+
   useEffect(() => {
     handleGetGithubToken();
   }, [handleGetGithubToken]);
+
+  useEffect(() => {
+    if (userIdNum == null) {
+      setUserRepoList([]);
+      setReposReady(false);
+      return;
+    }
+    setReposReady(false);
+    void handleGetUserRepos(false);
+  }, [userIdNum, handleGetUserRepos]);
 
   return (
     <section className="flex flex-col gap-4">
@@ -56,15 +108,31 @@ const WorkspaceBody = () => {
             Connect github
           </Button>
         ) : (
-          <RepoDialog />
+          <RepoDialog onRepoAdded={() => void handleGetUserRepos(true)} />
         )}
       </Card>
 
-      <Card>
-        <CardContent>
+      <div className="pt-6">
+        {showRepoSectionLoader ? (
+          <div
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            className="flex min-h-[220px] flex-col items-center justify-center gap-3 py-16"
+          >
+            <Loader2 className="size-9 animate-spin text-primary" aria-hidden />
+            <p className="text-sm font-medium text-muted-foreground">
+              {!clerkLoaded || (clerkUserId && userDetails === null)
+                ? "Loading your workspace…"
+                : "Loading your repositories…"}
+            </p>
+          </div>
+        ) : userRepoList.length === 0 ? (
           <EmptyWorkspace />
-        </CardContent>
-      </Card>
+        ) : (
+          <UserRepoList repoList={userRepoList} />
+        )}
+      </div>
     </section>
   );
 };

@@ -35,6 +35,7 @@ export async function GET() {
     const data: unknown = await response.json();
 
     if (!response.ok) {
+      console.error(data);
       const err = data as GitHubErrorBody;
       return NextResponse.json(
         {

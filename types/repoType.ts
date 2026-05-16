@@ -131,6 +131,7 @@ export type TGitHubRepoListItem = {
   owner: string;
   description: string | null;
   language: string | null;
+  userId?: number;
 };
 
 export function mapGitHubApiRepoToListItem(
