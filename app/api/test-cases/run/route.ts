@@ -22,9 +22,27 @@ import {
   type GeminiTokenUsage,
 } from "@/lib/server/usage-credits";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY!,
-});
+/**
+ * Hosted browser runs can exceed Vercel’s default ~10–15s function limit.
+ * - Hobby (2025): capped at **60s** when `maxDuration` is set.
+ * - Pro: increase toward **300** if tests often need longer Browserless sessions.
+ */
+export const maxDuration = 60;
+/** Playwright connects over outbound WebSockets to Browserless — needs Node.js, not Edge. */
+export const runtime = "nodejs";
+
+let geminiSingleton: GoogleGenAI | null = null;
+
+function getGemini(): GoogleGenAI {
+  const key = process.env.GEMINI_API_KEY?.trim();
+  if (!key) {
+    throw new Error(
+      "GEMINI_API_KEY is not configured. Add it under Vercel → Project → Environment Variables.",
+    );
+  }
+  geminiSingleton ??= new GoogleGenAI({ apiKey: key });
+  return geminiSingleton;
+}
 
 /**
  * Build WebSocket CDP URL for Playwright chromium.connectOverCDP.
@@ -194,7 +212,7 @@ async function generateGeminiAutomationScript(
   for (const model of chain) {
     for (let attempt = 1; attempt <= maxPerModel; attempt++) {
       try {
-        const response = await ai.models.generateContent({
+        const response = await getGemini().models.generateContent({
           model,
           contents: prompt,
         });
