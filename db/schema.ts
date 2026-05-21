@@ -51,16 +51,21 @@ export const TestCasesTable = pgTable("test_cases", {
   type: varchar("type", { length: 100 }).notNull(),
   priority: varchar("priority", { length: 50 }).notNull(),
 
-  // Important metadata for second step: Browserbase script generation
+  // Routing + repo file context fed to Gemini for hosted-browser automation scripts
   targetRoute: varchar("target_route", { length: 500 }),
   targetFiles: jsonb("target_files").$type<string[]>().default([]),
   expectedResult: text("expected_result"),
 
-  // Later you can update these fields
+  /** Playwright automation body persisted for `/api/test-cases/run` (column name retained for compatibility). */
   browserbaseScript: text("browserbase_script"),
   status: varchar("status", { length: 100 }).default("generated"),
 
   createdAt: timestamp("created_at").defaultNow(),
+
+  /** Console / system lines from the last hosted browser run (JSON array). */
+  logs: jsonb("logs").$type<string[]>().default([]),
+  sessionId: varchar("session_id", { length: 255 }),
+  sessionUrl: varchar("session_url", { length: 255 }),
 });
 
 export type User = typeof users.$inferSelect;

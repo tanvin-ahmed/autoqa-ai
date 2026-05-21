@@ -24,11 +24,17 @@ import TestCaseList from "./TestCaseList";
 import { UserDetailsContext } from "@/context/userDetailsContext";
 import axios from "axios";
 import RepoSettingsDialog from "./RepoSettingsDialog";
+import {
+  hasNoCredits,
+  isInsufficientCreditsAxiosResponse,
+  toastPayBeforeRunning,
+} from "@/lib/insufficient-credits-toast";
 
 type GenerateTestCasesResponse = {
   success?: boolean;
   testCases?: TestCase[];
   count?: number;
+  creditsRemaining?: number;
   error?: string;
 };
 
@@ -42,7 +48,7 @@ type UserRepoListProps = {
 };
 
 const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
-  const { userDetails } = useContext(UserDetailsContext);
+  const { userDetails, setUserDetails } = useContext(UserDetailsContext);
   /** DB `repositories.id` for the row currently running generation (only one at a time). */
   const [generatingRepoId, setGeneratingRepoId] = useState<number | null>(null);
   /** Test cases keyed by GitHub `repo_id` (same string as accordion value / API `repoId`). */
@@ -99,6 +105,11 @@ const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
     const userId = userDetails?.id;
     if (userId == null || generatingRepoId !== null) return;
 
+    if (hasNoCredits(userDetails?.credits)) {
+      toastPayBeforeRunning();
+      return;
+    }
+
     const key = repoKeyFromRepository(repo);
 
     try {
@@ -115,6 +126,12 @@ const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
         },
       );
 
+      if (typeof data.creditsRemaining === "number") {
+        setUserDetails((prev) =>
+          prev ? { ...prev, credits: data.creditsRemaining! } : prev,
+        );
+      }
+
       if (data.testCases?.length) {
         setTestCasesByRepoId((prev) => ({
           ...prev,
@@ -124,6 +141,14 @@ const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
         await fetchTestCases(key);
       }
     } catch (error) {
+      const ax = axios.isAxiosError(error);
+      const rem = ax ? error.response?.data?.creditsRemaining : undefined;
+      if (typeof rem === "number") {
+        setUserDetails((prev) => (prev ? { ...prev, credits: rem } : prev));
+      }
+      if (isInsufficientCreditsAxiosResponse(error)) {
+        toastPayBeforeRunning();
+      }
       console.error(error);
     } finally {
       setGeneratingRepoId(null);
@@ -256,6 +281,7 @@ const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
                   ) : hasTestCases ? (
                     <TestCaseList
                       repoId={key}
+                      repository={repo}
                       testCases={cases}
                       onRefresh={(rid) =>
                         void fetchTestCases(rid, { invalidate: true })

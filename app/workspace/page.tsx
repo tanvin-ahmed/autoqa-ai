@@ -3,9 +3,9 @@ import React from "react";
 
 const WorkspacePage = () => {
   return (
-    <main>
+    <div>
       <WorkspaceBody />
-    </main>
+    </div>
   );
 };
 

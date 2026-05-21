@@ -1,16 +1,23 @@
 "use client";
 
-import type { TestCase } from "@/db";
+import type { TestCase, Repository } from "@/db";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Play, RefreshCcw, Route } from "lucide-react";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import TestcaseSettingsDialog from "./TestcaseSettingsDialog";
+import TestExecutionModal from "./TestExuctionDialog";
+import { UserDetailsContext } from "@/context/userDetailsContext";
+import {
+  hasNoCredits,
+  toastPayBeforeRunning,
+} from "@/lib/insufficient-credits-toast";
 
 type TestCaseListProps = {
   repoId: string;
+  repository: Repository;
   testCases: TestCase[];
   onRefresh: (repoId: string) => void | Promise<void>;
   onTestCaseUpdated?: (updated: TestCase) => void;
@@ -18,11 +25,14 @@ type TestCaseListProps = {
 
 const TestCaseList = ({
   repoId,
+  repository,
   testCases,
   onRefresh,
   onTestCaseUpdated,
 }: TestCaseListProps) => {
+  const { userDetails } = useContext(UserDetailsContext);
   const [selectedTestCases, setSelectedTestCases] = useState<TestCase[]>([]);
+  const [runDialogOpen, setRunDialogOpen] = useState(false);
 
   const selectedCount = selectedTestCases.length;
 
@@ -135,7 +145,16 @@ const TestCaseList = ({
                           {tc.priority}
                         </Badge>
                         {tc.status ? (
-                          <Badge variant="outline" className="font-normal">
+                          <Badge
+                            variant={
+                              tc.status === "failed"
+                                ? "destructive"
+                                : tc.status === "running"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                            className="font-normal"
+                          >
                             {tc.status}
                           </Badge>
                         ) : null}
@@ -184,11 +203,28 @@ const TestCaseList = ({
           type="button"
           className="w-full shrink-0 gap-2 sm:w-auto"
           disabled={selectedCount === 0}
+          onClick={() => {
+            if (hasNoCredits(userDetails?.credits)) {
+              toastPayBeforeRunning();
+              return;
+            }
+            setRunDialogOpen(true);
+          }}
         >
           <Play className="h-4 w-4" aria-hidden />
           Run
         </Button>
       </div>
+
+      <TestExecutionModal
+        isOpen={runDialogOpen}
+        onClose={() => {
+          setRunDialogOpen(false);
+          void onRefresh(repoId);
+        }}
+        testCases={selectedTestCases}
+        repository={repository}
+      />
     </div>
   );
 };

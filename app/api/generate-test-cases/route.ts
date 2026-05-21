@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";
+import { eq } from "drizzle-orm";
+
 import { db } from "@/db";
-import { TestCasesTable } from "@/db/schema";
+import { TestCasesTable, users } from "@/db/schema";
 import { cookies } from "next/headers";
+
+import { consumeCreditsClamped, refundCredits } from "@/lib/server/credits";
+import { getAuthenticatedDbUser } from "@/lib/server/db-user-auth";
+import {
+  creditsFromMeasuredGemini,
+  estimateCreditsBeforeGeminiCall,
+  extractGeminiUsageFromResponse,
+} from "@/lib/server/usage-credits";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY!,
@@ -135,15 +145,29 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { userId, repoId, owner, repo, branch = "main" } = body;
+    const { userId: bodyUserId, repoId, owner, repo, branch = "main" } = body;
+
+    const auth = await getAuthenticatedDbUser();
+    if ("error" in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+    const { user: dbUser } = auth;
+
+    if (typeof bodyUserId !== "number" && typeof bodyUserId !== "string") {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
+    const uid = typeof bodyUserId === "number" ? bodyUserId : Number(bodyUserId);
+    if (!Number.isFinite(uid) || uid !== dbUser.id) {
+      return NextResponse.json({ error: "Forbidden: user mismatch" }, { status: 403 });
+    }
 
     const cookieStore = await cookies();
     const githubToken = cookieStore.get("github_access_token")?.value;
 
-    if (!userId || !owner || !repo || !githubToken) {
+    if (!owner || !repo || !githubToken) {
       return NextResponse.json(
         {
-          error: "userId, owner, repo and githubToken are required",
+          error: "owner, repo and githubToken are required",
         },
         { status: 400 },
       );
@@ -193,6 +217,15 @@ export async function POST(req: NextRequest) {
       )
       .join("\n\n----------------------\n\n");
 
+    const suiteMaxOutParsed = Number.parseInt(
+      process.env.GEMINI_SUITE_MAX_OUTPUT_TOKENS_ESTIMATE ?? "",
+      10,
+    );
+    const suiteMaxOutEstimate =
+      Number.isFinite(suiteMaxOutParsed) && suiteMaxOutParsed > 0
+        ? suiteMaxOutParsed
+        : 8_192;
+
     // 4. Ask Gemini to generate test cases with metadata
     const prompt = `
     You are an expert QA automation engineer.
@@ -200,7 +233,7 @@ export async function POST(req: NextRequest) {
     Analyze the GitHub repository source code and generate useful small test cases.
 
     Your goal:
-    Generate test cases that can later be converted into Playwright / Browserbase automation scripts.
+    Generate test cases that can later be automated with Playwright in a hosted cloud browser session.
 
     Repository:
     Owner: ${owner}
@@ -229,8 +262,29 @@ export async function POST(req: NextRequest) {
     - Return only valid JSON.
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+    const suiteEstimate = estimateCreditsBeforeGeminiCall(
+      prompt.length,
+      suiteMaxOutEstimate,
+    );
+    if (dbUser.credits < suiteEstimate) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Insufficient credits to generate test cases.",
+          creditsRemaining: dbUser.credits,
+          estimatedCreditsRequired: suiteEstimate,
+        },
+        { status: 402 },
+      );
+    }
+
+    const suiteModel =
+      process.env.GEMINI_SUITE_MODEL?.trim() || "gemini-2.5-flash";
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+      model: suiteModel,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -292,49 +346,124 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+    } catch (geminiErr: unknown) {
+      console.error("Gemini suite generation failed:", geminiErr);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Gemini could not generate test cases right now.",
+          creditsRemaining: dbUser.credits,
+        },
+        { status: 502 },
+      );
+    }
 
-    const aiResult = JSON.parse(response.text || "{}");
-    const testCases = aiResult.testCases || [];
+    const usageMeta = extractGeminiUsageFromResponse(response);
+    const outputCharLen = (response.text ?? "").length;
+    const billAmount = creditsFromMeasuredGemini(
+      usageMeta,
+      prompt.length,
+      outputCharLen,
+    );
+    const billed = await consumeCreditsClamped(dbUser.id, billAmount);
+    let creditsRemaining = billed.creditsRemaining;
+    const chargedSuite = billed.charged;
+
+    let aiResult: { testCases?: unknown };
+    try {
+      aiResult = JSON.parse(response.text || "{}") as {
+        testCases?: unknown;
+      };
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Gemini returned invalid JSON for test cases",
+          creditsRemaining,
+          metering: {
+            geminiCreditsCharged: chargedSuite,
+            usage: usageMeta,
+          },
+        },
+        { status: 400 },
+      );
+    }
+
+    const testCases = Array.isArray(aiResult.testCases)
+      ? aiResult.testCases
+      : [];
 
     if (!testCases.length) {
       return NextResponse.json(
         {
           error: "Gemini did not generate any test cases",
+          creditsRemaining,
+          metering: {
+            geminiCreditsCharged: chargedSuite,
+            usage: usageMeta,
+          },
         },
         { status: 400 },
       );
     }
 
     // 5. Save generated test cases to Neon DB
-    const insertedTestCases = await db
-      .insert(TestCasesTable)
-      .values(
-        testCases.map((testCase: any) => ({
-          userId,
-          repoId,
-          repoName: repo,
-          repoOwner: owner,
-          branch,
+    let insertedTestCases;
+    try {
+      insertedTestCases = await db
+        .insert(TestCasesTable)
+        .values(
+          testCases.map((testCase: any) => ({
+            userId: String(dbUser.id),
+            repoId,
+            repoName: repo,
+            repoOwner: owner,
+            branch,
 
-          title: testCase.title,
-          description: testCase.description,
-          type: testCase.type,
-          priority: testCase.priority,
+            title: testCase.title,
+            description: testCase.description,
+            type: testCase.type,
+            priority: testCase.priority,
 
-          targetRoute: testCase.targetRoute,
-          targetFiles: testCase.targetFiles || [],
-          expectedResult: testCase.expectedResult,
+            targetRoute: testCase.targetRoute,
+            targetFiles: testCase.targetFiles || [],
+            expectedResult: testCase.expectedResult,
 
-          status: "generated",
-        })),
-      )
-      .returning();
+            status: "generated",
+          })),
+        )
+        .returning();
+    } catch (dbInsertErr: unknown) {
+      console.error("Failed to persist generated test cases:", dbInsertErr);
+      await refundCredits(dbUser.id, chargedSuite);
+
+      const [reload] = await db
+        .select({ credits: users.credits })
+        .from(users)
+        .where(eq(users.id, dbUser.id))
+        .limit(1);
+      creditsRemaining = reload?.credits ?? creditsRemaining;
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to save generated test cases. Credits were refunded.",
+          creditsRemaining,
+        },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: "Test cases generated successfully",
       count: insertedTestCases.length,
       testCases: insertedTestCases,
+      creditsRemaining,
+      metering: {
+        geminiCreditsCharged: chargedSuite,
+        usage: usageMeta,
+      },
     });
   } catch (error: any) {
     console.error("Generate test cases error:", error);

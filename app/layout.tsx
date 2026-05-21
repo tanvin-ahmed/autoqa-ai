@@ -1,15 +1,19 @@
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
+import { AppShell } from "@/components/custom/AppShell";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { isClerkConfigured } from "@/lib/env/clerk";
 import Provider from "./provider";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "Next.js Premium Startup Boilerplate",
+  title: {
+    default: "Auto QA — AI-assisted test automation",
+    template: "%s · Auto QA",
+  },
   description:
-    "Created using the ultimate interactive Next.js stack generator CLI.",
+    "JavaScript & TypeScript (incl. MERN) repos only—connect GitHub, draft reviewable tests with AI, and run scenarios beside Vitest, Jest, Playwright, Cypress.",
 };
 
 export default async function RootLayout({
@@ -17,6 +21,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const clerkAuthConfigured = isClerkConfigured();
+
   const shell = (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -30,14 +36,18 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Provider>{children}</Provider>
+          <Provider>
+            <AppShell clerkAuthConfigured={clerkAuthConfigured}>
+              {children}
+            </AppShell>
+          </Provider>
         </ThemeProvider>
         <Toaster />
       </body>
     </html>
   );
 
-  if (isClerkConfigured()) {
+  if (clerkAuthConfigured) {
     return <ClerkProvider>{shell}</ClerkProvider>;
   }
 

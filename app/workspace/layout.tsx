@@ -1,11 +1,10 @@
-import { PageContainer } from "@/components/custom/share/page-container";
-import WorkspaceHeader from "@/components/custom/workspace/WorkspaceHeader";
-import React from "react";
+import type { ReactNode } from "react";
 
-const layout = ({ children }: { children: React.ReactNode }) => {
+import { PageContainer } from "@/components/custom/share/page-container";
+
+const layout = ({ children }: { children: ReactNode }) => {
   return (
     <main className="min-h-dvh">
-      <WorkspaceHeader />
       <PageContainer className="py-6">{children}</PageContainer>
     </main>
   );

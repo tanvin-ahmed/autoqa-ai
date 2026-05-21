@@ -121,3 +121,210 @@ html.dark {
     @apply bg-background text-foreground antialiased;
   }
 }
+
+@keyframes landing-grid-shift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-48px, -32px, 0);
+  }
+}
+
+@keyframes landing-edge-pulse {
+  50% {
+    border-color: color-mix(in oklch, var(--ring), transparent 45%);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--ring), transparent 60%);
+  }
+}
+
+.landing-grid-shift {
+  animation: landing-grid-shift 36s linear infinite;
+}
+
+.landing-chip-glow {
+  animation: landing-edge-pulse 5s ease-in-out infinite;
+}
+
+/* Hero HUD: slow scan overlay (CRT-style telemetry, ultra-subtle). */
+@keyframes landing-scanline-move {
+  0% {
+    transform: translate3d(0, -120%, 0);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.35;
+  }
+  94% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translate3d(0, 120vh, 0);
+    opacity: 0;
+  }
+}
+
+.landing-scanline {
+  animation: landing-scanline-move 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes landing-live-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsl(142 72% 45% / 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 14px hsl(142 72% 45% / 0);
+  }
+}
+
+.landing-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: hsl(142 71% 45%);
+  animation: landing-live-pulse 2.25s ease-out infinite;
+}
+
+.dark .landing-live-dot {
+  background-color: hsl(142 76% 52%);
+}
+
+/* Shimmer over cards / HUD panels. */
+@keyframes landing-shimmer-slide {
+  0% {
+    transform: translate3d(-100%, 0, 0);
+  }
+  100% {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+.landing-panel-shimmer {
+  position: relative;
+}
+
+.landing-panel-shimmer::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    108deg,
+    transparent 42%,
+    color-mix(in oklch, var(--foreground), transparent 92%) 50%,
+    transparent 58%
+  );
+  mix-blend-mode: overlay;
+  animation: landing-shimmer-slide 4.8s ease-in-out infinite;
+  opacity: 0.65;
+}
+
+/* Progress bar runway (test-runner vibe). */
+@keyframes landing-bar-dash {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 24px 0;
+  }
+}
+
+.landing-runner-bar-fill {
+  background-image: repeating-linear-gradient(
+    -72deg,
+    color-mix(in oklch, var(--foreground), transparent 88%) 0 2px,
+    transparent 2px 6px
+  );
+  background-size: 24px 100%;
+  animation: landing-bar-dash 1s linear infinite;
+}
+
+/* Neon edge pulse on HUD frame. */
+@keyframes landing-frame-glow {
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.landing-frame-pulse {
+  animation: landing-frame-glow 3s ease-in-out infinite;
+}
+
+/* Decorative corner brackets (pseudo-HUD framing). */
+.landing-corner-box {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: color-mix(in oklch, var(--primary), transparent 58%);
+}
+
+/* Orbit halo behind hero visuals. */
+@keyframes landing-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.landing-orbit-ring {
+  animation: landing-orbit-spin 28s linear infinite;
+}
+
+@keyframes landing-float-y {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+.landing-float-slow {
+  animation: landing-float-y 9s ease-in-out infinite;
+}
+
+/* Telemetry ticker (testing HUD strip). */
+@keyframes landing-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.landing-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: landing-marquee 52s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-grid-shift,
+  .landing-chip-glow,
+  .landing-scanline,
+  .landing-live-dot,
+  .landing-panel-shimmer::after,
+  .landing-runner-bar-fill,
+  .landing-frame-pulse,
+  .landing-orbit-ring,
+  .landing-float-slow,
+  .landing-marquee-track {
+    animation: none;
+  }
+
+  .landing-live-dot {
+    box-shadow: none;
+  }
+
+  .landing-marquee-track {
+    transform: none;
+  }
+
+  .landing-panel-shimmer::after {
+    opacity: 0;
+    transform: none;
+  }
+}
