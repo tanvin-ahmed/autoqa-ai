@@ -84,7 +84,7 @@ export default function PricingPage() {
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.32em] text-primary">
             ::pricing_signal
           </p>
-          <h1 className="text-balance text-4xl font-semibold tracking-tight">
+          <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground">
             Simple token ladders for QA velocity
           </h1>
           <p className="text-muted-foreground sm:text-lg">

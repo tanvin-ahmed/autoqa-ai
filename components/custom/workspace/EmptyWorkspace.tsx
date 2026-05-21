@@ -7,7 +7,7 @@ const EmptyWorkspace = () => {
   return (
     <div className="flex flex-col items-center justify-center my-20">
       <Image src={"/folder.png"} alt="folder" width={100} height={100} />
-      <h3 className="text-lg font-bold">No repositories added</h3>
+      <h3 className="text-lg font-bold text-foreground">No repositories added</h3>
       <p className="text-sm text-muted-foreground">
         Connect your github account & add a repository to generate and run test
         cases

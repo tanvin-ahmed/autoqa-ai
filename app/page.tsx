@@ -142,7 +142,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="space-y-5">
-                  <h1 className="text-pretty font-semibold tracking-tight text-[clamp(2.1rem,5.8vw,3.65rem)] leading-[1.04]">
+                  <h1 className="text-pretty font-semibold tracking-tight text-[clamp(2.1rem,5.8vw,3.65rem)] leading-[1.04] text-foreground">
                     A{" "}
                     <span className="relative inline-flex items-baseline whitespace-nowrap">
                       testing observatory{" "}
@@ -326,7 +326,7 @@ export default function HomePage() {
               <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-primary">
                 integration_mesh
               </p>
-              <h2 id="integrations-heading" className="text-xl font-semibold tracking-tight">
+              <h2 id="integrations-heading" className="text-xl font-semibold tracking-tight text-foreground">
                 Git commits meet runner telemetry—JS lane only today
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -334,15 +334,15 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 font-mono text-xs font-medium uppercase tracking-wider shadow-sm ring-1 ring-primary/25">
+              <span className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 font-mono text-xs font-medium uppercase tracking-wider text-foreground shadow-sm ring-1 ring-primary/25">
                 <Gauge className="h-4 w-4 text-primary opacity-90" aria-hidden />
                 npm · vite · playwright
               </span>
-              <span className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider shadow-sm">
+              <span className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-foreground shadow-sm">
                 <Braces className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
                 JS · TS · MERN
               </span>
-              <span className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium shadow-sm">
+              <span className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground shadow-sm">
                 <GitBranch className="h-4 w-4 opacity-70" aria-hidden />
                 GitHub OAuth ingress
               </span>
@@ -386,7 +386,7 @@ export default function HomePage() {
               </p>
               <h2
                 id="features-heading"
-                className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
+                className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
               >
                 Synthetic intelligence, deterministic harness—a testing platform veneer
               </h2>
@@ -408,7 +408,7 @@ export default function HomePage() {
                         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                           {tile.eyebrow}
                         </p>
-                        <h3 className="mt-2 font-sans text-xl font-semibold leading-snug tracking-tight">
+                        <h3 className="mt-2 font-sans text-xl font-semibold leading-snug tracking-tight text-foreground">
                           {tile.title}
                         </h3>
                         <p className="mt-1 font-mono text-[11px] text-primary/95 dark:text-cyan-300/90">
@@ -446,7 +446,7 @@ export default function HomePage() {
               </p>
               <h2
                 id="workflow-heading"
-                className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
+                className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
               >
                 Commit → ingest → propagate assertions → certify release pulses
               </h2>
@@ -472,7 +472,9 @@ export default function HomePage() {
                       </span>
                       <Icon className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
                     </div>
-                    <h3 className="mt-5 text-lg font-semibold tracking-tight">{step.title}</h3>
+                    <h3 className="mt-5 text-lg font-semibold tracking-tight text-foreground">
+                      {step.title}
+                    </h3>
                     <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{step.copy}</p>
                   </li>
                 );

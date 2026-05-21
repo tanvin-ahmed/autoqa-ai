@@ -45,7 +45,7 @@ export function LandingFAQ() {
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <h2
           id="faq-heading"
-          className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
+          className="text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
         >
           Frequently asked questions
         </h2>

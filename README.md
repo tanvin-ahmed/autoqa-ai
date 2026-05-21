@@ -1,18 +1,70 @@
 # AutoQA AI
 
-Workspace for AI-assisted QA: GitHub-connected repos, generated test cases, and hosted-browser runs via Browserless.
+Automated QA tooling that connects to GitHub repositories, analyzes project context with **Google Gemini**, and suggests **hosted browser test runs** (Playwright against your app URLs via **Browserless**). Credits track AI and hosted-browser usage; **Stripe** can be used for billing and subscriptions.
 
-## Deploying on Vercel
+---
 
-Local runs succeed while production returns **500** on `POST /api/test-cases/run` when:
+## Overview
 
-1. **Function timeout** — The route connects to Browserless, runs Gemini (when regenerating a script), and executes Playwright. That almost always exceeds Vercel’s **default (~10–15 s)** unless you extend the route.  
-   This repo exports **`maxDuration = 60`** and **`runtime = "nodejs"`** on `app/api/test-cases/run/route.ts`. Hobby is capped around **60 s** when configured; upgrade to **Pro** and raise `maxDuration` (e.g. **300**) if suites often exceed a minute.
+AutoQA AI is a **Next.js** full-stack application. Users authenticate with **Clerk**, link **GitHub** via OAuth so the backend can read repository metadata and file contents where needed, then use a **workspace** to manage connected repos, domains, AI-generated **test cases**, and **execution reports** stored in **Neon PostgreSQL**.
 
-2. **Missing environment variables** — In Vercel → **Project → Settings → Environment Variables**, set the same values as `.env.example`, especially **`GEMINI_API_KEY`**, **`BROWSERLESS_WS_ENDPOINT`**, **`BROWSERLESS_TOKEN`**, **`DATABASE_URL`**, and Clerk/GitHub OAuth secrets.
+The workflow is geared toward generating structured test scenarios from real codebases, iterating on scripts, and running them in disposable cloud browsers without installing Chrome or Playwright locally.
 
-3. **Database schema drift** — Production Neon must match `db/schema.ts`. If selects fail with “column … does not exist”, run `db/migrations/001_stripe_billing.sql` in Neon SQL (or `pnpm drizzle-kit push`).
+---
 
-4. **OAuth URLs** — Register your production **`https://…`** in the GitHub App and Clerk; set **`GITHUB_REDIRECT_URI`** and **`NEXT_PUBLIC_APP_URL`** accordingly.
+## Features
 
-Redeploy after changing env vars. To see the precise error body, open the failing request in the browser **Network** tab (response JSON).
+- **Authentication & profiles** — Sign-in/up with Clerk; workspace state tied to a persisted app user (`users` row in Postgres).
+- **GitHub integration** — OAuth-backed connection; repositories are listed and persisted for the workspace.
+- **Repository & domain settings** — Configure target URLs and project-level instructions feeding test generation or runs.
+- **AI test-case generation** — Calls Gemini against repo context (files, routing hints) to produce structured test cases (title, description, type, priority, routes, file context JSON).
+- **Hosted browser runner** — Optional cached or regenerated automation scripts executed with **Playwright** over CDP attached to **Browserless** (`/api/test-cases/run`): logs and pass/fail status stored on test cases.
+- **Credit metering** — Usage-based debits around Gemini tokens and approximate Browserless wall time; surfaced in the workspace UI with guardrails before expensive operations.
+- **Stripe billing** — Checkout, webhook-driven fulfillment/idempotency, customer portal linkage (Stripe customer stored on user where configured).
+- **Marketing / support surfaces** — Landing, pricing/support pages as shipped in-app.
+
+---
+
+## Technologies
+
+| Area | Stack |
+| --- | --- |
+| **Framework** | Next.js (App Router), React 19, TypeScript |
+| **UI** | Tailwind CSS, Radix primitives, lucide-react, Sonner (toasts) |
+| **Auth** | Clerk (`@clerk/nextjs`) |
+| **Database** | Neon Postgres + Drizzle ORM (`drizzle-orm`, `@neondatabase/serverless`) |
+| **AI** | `@google/genai` (Gemini) for suites and automation script regeneration |
+| **Hosting browser / automation** | `playwright-core` + outbound WebSockets to Browserless |
+| **Payments** | Stripe (server APIs + Stripe.js on the client where used) |
+| **HTTP client** | axios |
+| **GitHub** | OAuth callbacks and GitHub REST for repo/token flows |
+| **Tooling** | ESLint (`eslint-config-next`), drizzle-kit, pnpm |
+
+Configuration reference: **`.env.example`**.
+
+---
+
+## Local development
+
+```bash
+pnpm install
+cp .env.example .env
+# Fill .env with real keys (Clerk, Neon, Gemini, Browserless, GitHub, Stripe, etc.)
+pnpm dev
+```
+
+Schema sync (`db/schema.ts` vs Neon):
+
+```bash
+pnpm db:push
+# or apply SQL migrations under db/migrations/
+```
+
+---
+
+> **Note — Vercel Hobby and hosted test runs**  
+> On your laptop, **`pnpm dev`** keeps a **long-lived Node process**, so **`POST /api/test-cases/run`** can spend as long as it needs talking to Gemini, opening a **Browserless CDP WebSocket**, and executing Playwright.  
+>  
+> **Vercel Hobby** serves each API route as a **short-lived serverless invocation** with a **maximum wall-clock time per request** (on the order of **~60 seconds** when explicitly configured via `maxDuration` in `app/api/test-cases/run/route.ts`; **default** timeouts are shorter). Hosted runs that overshoot this budget are **terminated by the platform**, which commonly surfaces as **500** or gateway errors even though the **same deployment logic works locally**.  
+>  
+> **Mitigations:** keep runs under Hobby’s ceiling, raise `maxDuration` on a plan that supports **longer executions** (e.g. **Vercel Pro** allows higher limits), offload long runner work to an external worker, or run tests locally/self-hosted Node. Missing **Production** env vars (**`GEMINI_API_KEY`**, **`BROWSERLESS_*`**, **`DATABASE_URL`**, etc.) or a **mis-migrated Neon schema** also fail only after deploy—investigate the response body in the browser **Network** tab for JSON `error` details.

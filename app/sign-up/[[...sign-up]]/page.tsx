@@ -8,15 +8,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <main
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#09090b",
-      }}
-    >
+    <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-12">
       <SignUp />
     </main>
   );

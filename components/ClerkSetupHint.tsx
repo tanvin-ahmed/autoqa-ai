@@ -1,31 +1,34 @@
 export function ClerkSetupHint() {
   return (
-    <main
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#09090b",
-        color: "#fafafa",
-        fontFamily: "system-ui, sans-serif",
-        padding: "2rem",
-      }}
-    >
-      <div style={{ maxWidth: "28rem", textAlign: "center", lineHeight: 1.6 }}>
-        <h1 style={{ fontSize: "1.25rem", marginBottom: "0.75rem" }}>Clerk is not configured</h1>
-        <p style={{ color: "#a1a1aa", marginBottom: "1rem", fontSize: "0.9375rem" }}>
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-background px-6 py-16 text-center text-foreground antialiased">
+      <div className="max-w-lg space-y-4 leading-relaxed">
+        <h1 className="text-xl font-semibold tracking-tight">
+          Clerk is not configured
+        </h1>
+        <p className="text-sm text-muted-foreground">
           Add valid{" "}
-          <code style={{ color: "#e4e4e7" }}>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> and{" "}
-          <code style={{ color: "#e4e4e7" }}>CLERK_SECRET_KEY</code> from the Clerk dashboard to{" "}
-          <code style={{ color: "#e4e4e7" }}>.env</code>. Example placeholders like{" "}
-          <code style={{ color: "#e4e4e7" }}>pk_test_placeholder</code> are rejected.
+          <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.8rem] text-foreground">
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+          </code>{" "}
+          and{" "}
+          <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.8rem] text-foreground">
+            CLERK_SECRET_KEY
+          </code>{" "}
+          from the Clerk dashboard to{" "}
+          <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.8rem] text-foreground">
+            .env
+          </code>
+          . Example placeholders like{" "}
+          <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.8rem] text-foreground">
+            pk_test_placeholder
+          </code>{" "}
+          are rejected.
         </p>
         <a
           href="https://dashboard.clerk.com"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "#38bdf8", fontWeight: 600 }}
+          className="inline-block font-semibold text-primary underline-offset-4 hover:underline"
         >
           Open Clerk dashboard
         </a>

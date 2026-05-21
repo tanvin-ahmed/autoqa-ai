@@ -14,7 +14,7 @@ export default function SupportPage() {
   return (
     <main className="grow">
       <PageContainer className="max-w-xl py-12 sm:py-16">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           Support
         </h1>
 

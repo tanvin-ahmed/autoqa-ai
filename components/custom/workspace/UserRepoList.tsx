@@ -303,10 +303,12 @@ const UserRepoList = ({
                       }
                     />
                   ) : (
-                    <div className="flex flex-col justify-between gap-4 rounded-xl border bg-gray-50 p-4 sm:flex-row sm:items-center">
+                    <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-muted/30 p-4 sm:flex-row sm:items-center">
                       <div>
-                        <h3 className="font-medium">Generate AI Test Cases</h3>
-                        <p className="mt-1 text-sm text-gray-500">
+                        <h3 className="font-medium text-foreground">
+                          Generate AI Test Cases
+                        </h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
                           Analyze this repository and generate automated test
                           cases using AI.
                         </p>

@@ -315,9 +315,10 @@ export default function TestExecutionModal({
                 <Button
                   onClick={startExecution}
                   disabled={!githubConnected}
-                  className="h-10 bg-primary hover:bg-primary/95 text-white shadow-md font-medium px-6 gap-2"
+                  className="h-10 bg-primary px-6 font-medium text-primary-foreground shadow-md hover:bg-primary/95 gap-2"
                 >
-                  <Play className="h-4 w-4 fill-white" /> Start Execution
+                  <Play className="h-4 w-4 fill-primary-foreground" /> Start
+                  Execution
                 </Button>
               ) : (
                 <Button
@@ -476,47 +477,51 @@ export default function TestExecutionModal({
                           Generated Playwright Code
                         </span>
                       </div>
-                      <pre className="p-3 bg-gray-950 text-emerald-400 font-mono text-[11px] leading-relaxed overflow-x-auto max-h-36">
+                      <pre className="max-h-36 overflow-x-auto border-t border-border bg-muted/70 p-3 font-mono text-[11px] leading-relaxed text-emerald-800 dark:bg-muted/25 dark:text-emerald-400">
                         {currentSelectedResult.browserbaseScript}
                       </pre>
                     </div>
                   )}
 
                   {/* Terminal logs panel */}
-                  <div className="flex-1 flex flex-col rounded-lg border overflow-hidden min-h-48">
-                    <div className="bg-gray-950 text-gray-200 px-3.5 py-2.5 border-b border-gray-800 flex items-center justify-between shrink-0 font-mono">
-                      <span className="text-xs font-semibold flex items-center gap-1.5 text-emerald-400">
+                  <div className="flex min-h-48 flex-1 flex-col overflow-hidden rounded-lg border border-border">
+                    <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted px-3.5 py-2.5 font-mono">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                         <Terminal className="h-3.5 w-3.5" /> Console Terminal
                         Output
                       </span>
                       <Badge
                         variant="secondary"
-                        className="bg-gray-800 text-gray-300 border-none text-[10px] uppercase"
+                        className="border-0 bg-background/70 font-mono text-[10px] uppercase text-muted-foreground dark:bg-background/60"
                       >
                         {currentSelectedResult?.status || "idle"}
                       </Badge>
                     </div>
-                    <div className="flex-1 p-3 bg-gray-950 font-mono text-[11px] text-gray-300 overflow-y-auto flex flex-col gap-1.5 select-text">
+                    <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto bg-muted/50 p-3 font-mono text-[11px] text-muted-foreground select-text dark:bg-muted/25">
                       {currentSelectedResult?.logs.map((log, lIdx) => (
                         <div
                           key={lIdx}
                           className="leading-relaxed whitespace-pre-wrap"
                         >
                           {log.startsWith("[SYSTEM]") ? (
-                            <span className="text-blue-400">{log}</span>
+                            <span className="text-blue-700 dark:text-blue-400">
+                              {log}
+                            </span>
                           ) : log.startsWith("[SYSTEM ERROR]") ? (
-                            <span className="text-rose-400 font-semibold">
+                            <span className="font-semibold text-rose-700 dark:text-rose-400">
                               {log}
                             </span>
                           ) : log.startsWith("[BROWSER]") ? (
-                            <span className="text-purple-400">{log}</span>
+                            <span className="text-purple-700 dark:text-purple-400">
+                              {log}
+                            </span>
                           ) : (
-                            <span>{log}</span>
+                            <span className="text-foreground">{log}</span>
                           )}
                         </div>
                       ))}
                       {currentSelectedResult?.error && (
-                        <div className="text-red-400 font-bold mt-2 pt-2 border-t border-gray-800">
+                        <div className="mt-2 border-t border-border pt-2 font-bold text-destructive">
                           Error: {currentSelectedResult.error}
                         </div>
                       )}

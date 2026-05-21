@@ -135,7 +135,7 @@ const RepoDialog = ({ onRepoAdded }: RepoDialogProps) => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={cn(
-                "flex h-9 w-full rounded-md border border-input bg-background py-1 pl-8 pr-3 text-sm shadow-sm",
+                "flex h-9 w-full rounded-md border border-input bg-background py-1 pl-8 pr-3 text-sm text-foreground shadow-sm",
                 "placeholder:text-muted-foreground",
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               )}
