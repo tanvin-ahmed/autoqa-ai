@@ -1,7 +1,8 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { sql } from "drizzle-orm";
+
 import { db, users } from "@/db";
-import { eq } from "drizzle-orm";
 
 type ClerkUser = NonNullable<Awaited<ReturnType<typeof currentUser>>>;
 
@@ -10,7 +11,9 @@ function clerkEmail(user: ClerkUser) {
     user.primaryEmailAddress?.emailAddress ??
     user.emailAddresses[0]?.emailAddress ??
     ""
-  );
+  )
+    .trim()
+    .toLowerCase();
 }
 
 function clerkDisplayName(user: ClerkUser): string {
@@ -45,7 +48,7 @@ export async function POST() {
     const userList = await db
       .select()
       .from(users)
-      .where(eq(users.email, email))
+      .where(sql`LOWER(TRIM(${users.email})) = ${email}`)
       .limit(1);
 
     if (userList.length > 0) {
@@ -54,7 +57,7 @@ export async function POST() {
         const [updated] = await db
           .update(users)
           .set({ name })
-          .where(eq(users.email, email))
+          .where(sql`LOWER(TRIM(${users.email})) = ${email}`)
           .returning();
         return NextResponse.json({ user: updated ?? existing });
       }

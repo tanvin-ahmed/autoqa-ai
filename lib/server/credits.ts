@@ -102,3 +102,14 @@ export async function refundCredits(userId: number, amount: number): Promise<voi
     .set({ credits: sql`${users.credits} + ${n}` })
     .where(eq(users.id, userId));
 }
+
+/** Add credits after Stripe payment fulfillment (positive integer only). */
+export async function addCreditsToUser(userId: number, amount: number): Promise<void> {
+  const n = Math.floor(amount);
+  if (!Number.isFinite(n) || n <= 0) return;
+
+  await db
+    .update(users)
+    .set({ credits: sql`${users.credits} + ${n}` })
+    .where(eq(users.id, userId));
+}

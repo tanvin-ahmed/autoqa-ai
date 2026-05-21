@@ -4,20 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UserDetailsContext } from "@/context/userDetailsContext";
 import Image from "next/image";
-import { useCallback, useContext, useEffect, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import EmptyWorkspace from "./EmptyWorkspace";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { Loader2, ExternalLink } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import RepoDialog from "./RepoDialog";
 import type { Repository } from "@/db/schema";
-import { Loader2 } from "lucide-react";
 import UserRepoList from "./UserRepoList";
+import { toast } from "sonner";
 
 const WorkspaceBody = () => {
-  const { userDetails } = useContext(UserDetailsContext);
+  const { userDetails, setUserDetails } = useContext(UserDetailsContext);
   const { isLoaded: clerkLoaded, userId: clerkUserId } = useAuth();
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const [githubToken, setGithubToken] = useState<string | null>(null);
   const [userRepoList, setUserRepoList] = useState<Repository[]>([]);
   /** False until GET /api/github/user-repo finishes for the current `userDetails.id` (initial load only). */
@@ -31,8 +38,35 @@ const WorkspaceBody = () => {
     (userIdNum != null && !reposReady);
 
   const handleAddRepository = () => {
-    router.push("/api/github");
+    window.location.href = "/api/github";
   };
+
+  const stripeSuccessHandled = useRef(false);
+
+  useEffect(() => {
+    if (searchParams.get("stripe_success") !== "1") return;
+    if (stripeSuccessHandled.current) return;
+    stripeSuccessHandled.current = true;
+
+    toast.success("Payment received", {
+      description: "Your credits will update in a moment.",
+      id: "stripe-checkout-success",
+    });
+
+    void axios
+      .post("/api/users")
+      .then(({ data }) => {
+        if (data?.user) {
+          setUserDetails(data.user);
+        }
+      })
+      .catch(() => {
+        /* refreshed on next navigation */
+      });
+
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", path);
+  }, [searchParams, setUserDetails]);
 
   const handleGetGithubToken = useCallback(async () => {
     try {
@@ -88,9 +122,42 @@ const WorkspaceBody = () => {
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Workspace</h1>
-        <p className="text-sm text-indigo-400 bg-indigo-100 dark:bg-indigo-900 dark:text-indigo-100 rounded-md px-2 py-1">
-          Remaining credits: {userDetails?.credits}
-        </p>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {userDetails?.stripeCustomerId ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-1.5"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/billing/portal", {
+                    method: "POST",
+                  });
+                  const data = (await res.json()) as {
+                    url?: string;
+                    error?: string;
+                  };
+                  if (!res.ok) {
+                    toast.error(data.error || "Could not open billing portal.");
+                    return;
+                  }
+                  if (data.url) {
+                    window.location.assign(data.url);
+                  }
+                } catch {
+                  toast.error("Could not open billing portal.");
+                }
+              }}
+            >
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              Billing
+            </Button>
+          ) : null}
+          <p className="text-sm text-indigo-400 bg-indigo-100 dark:bg-indigo-900 dark:text-indigo-100 rounded-md px-2 py-1">
+            Remaining credits: {userDetails?.credits}
+          </p>
+        </div>
       </div>
 
       <Card className="flex items-center justify-between gap-2 p-4">
@@ -132,6 +199,7 @@ const WorkspaceBody = () => {
         ) : (
           <UserRepoList
             repoList={userRepoList}
+            githubConnected={Boolean(githubToken)}
             onRepoUpdated={(updated) =>
               setUserRepoList((prev) =>
                 prev.map((r) => (r.id === updated.id ? updated : r)),

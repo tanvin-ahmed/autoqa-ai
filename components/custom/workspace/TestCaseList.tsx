@@ -14,11 +14,13 @@ import {
   hasNoCredits,
   toastPayBeforeRunning,
 } from "@/lib/insufficient-credits-toast";
+import { toastGitHubRequiredForWorkspace } from "@/lib/workspace-toasts";
 
 type TestCaseListProps = {
   repoId: string;
   repository: Repository;
   testCases: TestCase[];
+  githubConnected: boolean;
   onRefresh: (repoId: string) => void | Promise<void>;
   onTestCaseUpdated?: (updated: TestCase) => void;
 };
@@ -27,6 +29,7 @@ const TestCaseList = ({
   repoId,
   repository,
   testCases,
+  githubConnected,
   onRefresh,
   onTestCaseUpdated,
 }: TestCaseListProps) => {
@@ -194,16 +197,22 @@ const TestCaseList = ({
             Run selected test cases
           </p>
           <p className="text-xs text-muted-foreground sm:text-sm">
-            {selectedCount === 0
-              ? "Choose cases above, then start a run against the selected items."
-              : `${selectedCount} selected — run will use these cases only.`}
+            {!githubConnected
+              ? "Connect GitHub in the workspace to run hosted browser tests."
+              : selectedCount === 0
+                ? "Choose cases above, then start a run against the selected items."
+                : `${selectedCount} selected — run will use these cases only.`}
           </p>
         </div>
         <Button
           type="button"
           className="w-full shrink-0 gap-2 sm:w-auto"
-          disabled={selectedCount === 0}
+          disabled={!githubConnected || selectedCount === 0}
           onClick={() => {
+            if (!githubConnected) {
+              toastGitHubRequiredForWorkspace();
+              return;
+            }
             if (hasNoCredits(userDetails?.credits)) {
               toastPayBeforeRunning();
               return;
@@ -224,6 +233,7 @@ const TestCaseList = ({
         }}
         testCases={selectedTestCases}
         repository={repository}
+        githubConnected={githubConnected}
       />
     </div>
   );

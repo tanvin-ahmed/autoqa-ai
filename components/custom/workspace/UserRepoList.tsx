@@ -29,6 +29,7 @@ import {
   isInsufficientCreditsAxiosResponse,
   toastPayBeforeRunning,
 } from "@/lib/insufficient-credits-toast";
+import { toastGitHubRequiredForWorkspace } from "@/lib/workspace-toasts";
 
 type GenerateTestCasesResponse = {
   success?: boolean;
@@ -44,10 +45,15 @@ function repoKeyFromRepository(repo: Repository) {
 
 type UserRepoListProps = {
   repoList: Repository[];
+  githubConnected: boolean;
   onRepoUpdated?: (repo: Repository) => void;
 };
 
-const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
+const UserRepoList = ({
+  repoList,
+  githubConnected,
+  onRepoUpdated,
+}: UserRepoListProps) => {
   const { userDetails, setUserDetails } = useContext(UserDetailsContext);
   /** DB `repositories.id` for the row currently running generation (only one at a time). */
   const [generatingRepoId, setGeneratingRepoId] = useState<number | null>(null);
@@ -104,6 +110,11 @@ const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
   const handleGenerateTestCases = async (repo: Repository) => {
     const userId = userDetails?.id;
     if (userId == null || generatingRepoId !== null) return;
+
+    if (!githubConnected) {
+      toastGitHubRequiredForWorkspace();
+      return;
+    }
 
     if (hasNoCredits(userDetails?.credits)) {
       toastPayBeforeRunning();
@@ -283,6 +294,7 @@ const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
                       repoId={key}
                       repository={repo}
                       testCases={cases}
+                      githubConnected={githubConnected}
                       onRefresh={(rid) =>
                         void fetchTestCases(rid, { invalidate: true })
                       }
@@ -302,7 +314,11 @@ const UserRepoList = ({ repoList, onRepoUpdated }: UserRepoListProps) => {
                       <Button
                         type="button"
                         className="gap-2 shrink-0"
-                        disabled={userDetails?.id == null || isAnyGenerating}
+                        disabled={
+                          userDetails?.id == null ||
+                          isAnyGenerating ||
+                          !githubConnected
+                        }
                         aria-busy={isThisRepoGenerating}
                         onClick={() => void handleGenerateTestCases(repo)}
                       >

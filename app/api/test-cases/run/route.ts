@@ -328,6 +328,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const cookieStore = await cookies();
+    const githubTokenCookie =
+      cookieStore.get("github_access_token")?.value ??
+      cookieStore.get("gh_token")?.value;
+    const githubToken = githubTokenCookie?.trim() ?? "";
+    if (!githubToken) {
+      return NextResponse.json(
+        {
+          error:
+            "GitHub is not connected. Connect GitHub in the workspace to run tests.",
+        },
+        { status: 401 },
+      );
+    }
+
     const statusBeforeRun = testCase.status ?? "generated";
 
     let creditsRemaining = dbUser.credits;
@@ -369,18 +384,6 @@ export async function POST(req: NextRequest) {
     const forceRegenerate = mode === "generate" || !scriptText;
 
     if (forceRegenerate) {
-      const cookiesStore = await cookies();
-      const githubToken =
-        cookiesStore.get("github_access_token")?.value ??
-        cookiesStore.get("gh_token")?.value;
-
-      if (!githubToken) {
-        return NextResponse.json(
-          { error: "GitHub authentication token is missing or expired" },
-          { status: 401 },
-        );
-      }
-
       const targetFiles = testCase.targetFiles || [];
       let repoContext = "";
 

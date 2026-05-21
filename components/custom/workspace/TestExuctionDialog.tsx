@@ -36,12 +36,14 @@ import {
   isInsufficientCreditsAxiosResponse,
   toastPayBeforeRunning,
 } from "@/lib/insufficient-credits-toast";
+import { toastGitHubRequiredForWorkspace } from "@/lib/workspace-toasts";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   testCases: TestCase[];
   repository: any; // Connected repository config
+  githubConnected: boolean;
 };
 
 type RunResult = {
@@ -59,6 +61,7 @@ export default function TestExecutionModal({
   onClose,
   testCases,
   repository,
+  githubConnected,
 }: Props) {
   const { userDetails, setUserDetails } = useContext(UserDetailsContext);
   const [baseUrl, setBaseUrl] = useState("http://localhost:3000");
@@ -208,9 +211,13 @@ export default function TestExecutionModal({
     };
 
     runTest();
-  }, [isExecuting, currentIdx, testCases, baseUrl, executionMode]);
+  }, [isExecuting, currentIdx, testCases, baseUrl, executionMode, customPrompt]);
 
   const startExecution = () => {
+    if (!githubConnected) {
+      toastGitHubRequiredForWorkspace();
+      return;
+    }
     if (hasNoCredits(userDetails?.credits)) {
       toastPayBeforeRunning();
       return;
@@ -246,25 +253,38 @@ export default function TestExecutionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-6 gap-4 bg-white rounded-2xl shadow-2xl border overflow-hidden select-none">
-        <DialogHeader className="border-b pb-4 flex flex-row items-center justify-between shrink-0">
+      <DialogContent className="max-w-5xl h-[90vh] flex flex-col gap-4 overflow-hidden rounded-2xl bg-background p-6 shadow-2xl select-none sm:rounded-2xl">
+        <DialogHeader className="shrink-0 flex flex-row items-center justify-between border-b border-border pb-4">
           <div>
-            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <PlayCircle className="text-primary h-6 w-6" />
+            <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-foreground">
+              <PlayCircle className="h-6 w-6 text-primary" />
               Hosted browser test runner
             </DialogTitle>
-            <DialogDescription className="text-gray-500 text-sm">
+            <DialogDescription className="text-sm">
               Runs Playwright scripts in the cloud on Browserless (CDP), with
               optional AI script generation via Gemini.
             </DialogDescription>
           </div>
         </DialogHeader>
 
+        {!githubConnected ? (
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground"
+          >
+            <p className="font-medium text-destructive">GitHub not connected</p>
+            <p className="mt-1 text-muted-foreground">
+              Connect GitHub in the workspace header, refresh if needed, then
+              reopen this dialog to run tests.
+            </p>
+          </div>
+        ) : null}
+
         {/* Target Configuration Header */}
-        <div className="flex flex-col bg-gray-50 p-4 rounded-2xl border border-gray-200/80 gap-3 shrink-0">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
+        <div className="flex shrink-0 flex-col gap-3 rounded-2xl border border-border bg-muted/40 p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1.5">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 <Globe className="h-3.5 w-3.5 text-primary" /> Target Website
                 URL
               </label>
@@ -273,7 +293,7 @@ export default function TestExecutionModal({
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
                 disabled={isExecuting}
-                className="bg-white border-gray-300 font-mono text-sm shadow-xs h-10"
+                className="h-10 bg-background font-mono text-sm text-foreground shadow-xs placeholder:text-muted-foreground"
               />
             </div>
             <div className="flex gap-2.5">
@@ -281,7 +301,7 @@ export default function TestExecutionModal({
                 type="button"
                 variant="outline"
                 onClick={() => setShowOptions(!showOptions)}
-                className={`h-10 px-4 font-medium text-xs gap-1.5 transition-colors border-gray-300 ${showOptions ? "bg-primary/5 text-primary border-primary/30" : ""}`}
+                className={`h-10 gap-1.5 px-4 text-xs font-medium transition-colors ${showOptions ? "border-primary/40 bg-primary/10 text-primary" : "border-border"}`}
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Execution Options
@@ -294,6 +314,7 @@ export default function TestExecutionModal({
               {!isExecuting ? (
                 <Button
                   onClick={startExecution}
+                  disabled={!githubConnected}
                   className="h-10 bg-primary hover:bg-primary/95 text-white shadow-md font-medium px-6 gap-2"
                 >
                   <Play className="h-4 w-4 fill-white" /> Start Execution
@@ -312,21 +333,21 @@ export default function TestExecutionModal({
 
           {/* Expandable Advanced Options Section */}
           {showOptions && (
-            <div className="pt-3 border-t border-gray-200/60 grid grid-cols-1 md:grid-cols-3 gap-5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="grid animate-in fade-in slide-in-from-top-2 grid-cols-1 gap-5 border-t border-border pt-3 duration-200 md:grid-cols-3">
               {/* Execution Mode Segment */}
-              <div className="md:col-span-1 space-y-1.5">
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <div className="space-y-1.5 md:col-span-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Run Mode
                 </span>
-                <div className="grid grid-cols-2 bg-gray-200/60 p-1 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-2 gap-px rounded-lg border border-border bg-border p-1">
                   <button
                     type="button"
                     disabled={isExecuting}
                     onClick={() => setExecutionMode("cache")}
-                    className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition-all ${
                       executionMode === "cache"
-                        ? "bg-white text-gray-800 shadow-xs"
-                        : "text-gray-500 hover:text-gray-700"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     } disabled:opacity-50`}
                   >
                     <Database className="h-3.5 w-3.5" /> Run Cached
@@ -335,21 +356,21 @@ export default function TestExecutionModal({
                     type="button"
                     disabled={isExecuting}
                     onClick={() => setExecutionMode("generate")}
-                    className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition-all ${
                       executionMode === "generate"
-                        ? "bg-white text-gray-800 shadow-xs"
-                        : "text-gray-500 hover:text-gray-700"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     } disabled:opacity-50`}
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-yellow-600" /> AI
-                    Regenerate
+                    <Sparkles className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />{" "}
+                    AI Regenerate
                   </button>
                 </div>
               </div>
 
               {/* Temporary Prompt/Instruction Override Textarea */}
-              <div className="md:col-span-2 space-y-1.5">
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <div className="space-y-1.5 md:col-span-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Custom Run Instructions (Merged with Global Settings)
                 </span>
                 <textarea
@@ -357,8 +378,8 @@ export default function TestExecutionModal({
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
                   disabled={isExecuting || executionMode === "cache"}
-                  rows={1.5}
-                  className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:bg-gray-100 shadow-xs resize-none"
+                  rows={2}
+                  className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 font-sans text-xs text-foreground shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:opacity-50"
                 />
               </div>
             </div>
@@ -366,10 +387,10 @@ export default function TestExecutionModal({
         </div>
 
         {/* Main Dashboard Panel */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-5 overflow-hidden">
+        <div className="grid flex-1 grid-cols-1 gap-5 overflow-hidden md:grid-cols-3">
           {/* Left: Test Cases Queue List */}
-          <div className="md:col-span-1 border rounded-xl overflow-y-auto bg-gray-50/50 p-3 flex flex-col gap-2 shadow-xs">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2 mb-1">
+          <div className="flex flex-col gap-2 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3 shadow-xs md:col-span-1">
+            <h3 className="mb-1 px-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Execution Queue
             </h3>
             {testCases.map((tc, index) => {
@@ -381,21 +402,21 @@ export default function TestExecutionModal({
                 <div
                   key={tc.id}
                   onClick={() => setSelectedDetailId(tc.id)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                  className={`cursor-pointer rounded-lg border p-3 transition-all ${
                     isActive
-                      ? "bg-white border-primary shadow-sm ring-1 ring-primary/20"
-                      : "bg-white border-gray-200 hover:border-gray-300 shadow-xs"
+                      ? "border-primary bg-card shadow-sm ring-1 ring-primary/30"
+                      : "border-border bg-card/70 shadow-xs hover:border-primary/40"
                   }`}
                 >
-                  <div className="flex justify-between items-start gap-2 mb-1">
-                    <h4 className="font-semibold text-sm text-gray-800 line-clamp-1">
+                  <div className="mb-1 flex items-start justify-between gap-2">
+                    <h4 className="line-clamp-1 text-sm font-semibold text-foreground">
                       {tc.title}
                     </h4>
                     <ChevronRight
-                      className={`h-4 w-4 text-gray-400 transition-transform ${isActive ? "rotate-90 text-primary" : ""}`}
+                      className={`h-4 w-4 text-muted-foreground transition-transform ${isActive ? "rotate-90 text-primary" : ""}`}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 line-clamp-1 mb-2.5">
+                  <p className="mb-2.5 line-clamp-1 text-xs text-muted-foreground">
                     {tc.description}
                   </p>
                   <div className="flex justify-between items-center">
@@ -416,16 +437,16 @@ export default function TestExecutionModal({
           </div>
 
           {/* Right: Code, Live Logs & Details Panel */}
-          <div className="md:col-span-2 border rounded-xl flex flex-col bg-white overflow-hidden shadow-sm">
+          <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm md:col-span-2">
             {currentSelectedTestCase ? (
-              <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex flex-1 flex-col overflow-hidden">
                 {/* Header Info */}
-                <div className="p-4 border-b bg-gray-50/50 flex justify-between items-start gap-4 shrink-0">
-                  <div>
-                    <h3 className="font-bold text-base text-gray-800">
+                <div className="flex shrink-0 flex-col gap-4 border-b border-border bg-muted/30 p-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-bold text-foreground">
                       {currentSelectedTestCase.title}
                     </h3>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Expected: {currentSelectedTestCase.expectedResult}
                     </p>
                   </div>
@@ -448,9 +469,9 @@ export default function TestExecutionModal({
                 <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
                   {/* Playwright Script Code Block */}
                   {currentSelectedResult?.browserbaseScript && (
-                    <div className="rounded-lg border overflow-hidden">
-                      <div className="bg-gray-100 px-3.5 py-2 border-b flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                    <div className="overflow-hidden rounded-lg border border-border">
+                      <div className="flex items-center justify-between border-b border-border bg-muted px-3.5 py-2">
+                        <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                           <Code className="h-3.5 w-3.5 text-primary" />{" "}
                           Generated Playwright Code
                         </span>
@@ -504,12 +525,12 @@ export default function TestExecutionModal({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                <Terminal className="h-12 w-12 text-gray-300 mb-3" />
-                <h3 className="font-bold text-gray-700 text-lg">
+              <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+                <Terminal className="mb-3 h-12 w-12 text-muted-foreground" />
+                <h3 className="text-lg font-bold text-foreground">
                   No Test Case Selected
                 </h3>
-                <p className="text-sm text-gray-400 mt-1 max-w-sm">
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                   Choose any test case from the queue to inspect its console
                   logs and code.
                 </p>
@@ -519,7 +540,7 @@ export default function TestExecutionModal({
         </div>
 
         {/* Footer Controls */}
-        <div className="border-t pt-4 flex justify-end gap-3 shrink-0">
+        <div className="flex shrink-0 justify-end gap-3 border-t border-border pt-4">
           <Button
             variant="outline"
             onClick={onClose}
@@ -543,7 +564,7 @@ function StatusBadge({
 }) {
   if (isRunning) {
     return (
-      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-none flex gap-1 items-center animate-pulse">
+      <Badge className="flex animate-pulse items-center gap-1 border border-amber-500/35 bg-amber-500/15 text-amber-950 hover:bg-amber-500/15 dark:text-amber-100">
         <Loader2 className="h-3 w-3 animate-spin" /> Running
       </Badge>
     );
@@ -552,26 +573,26 @@ function StatusBadge({
   switch (status) {
     case "generating":
       return (
-        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-none flex gap-1 items-center">
+        <Badge className="flex items-center gap-1 border border-sky-500/35 bg-sky-500/15 text-sky-950 hover:bg-sky-500/15 dark:text-sky-100">
           <Loader2 className="h-3 w-3 animate-spin" /> Generating...
         </Badge>
       );
     case "passed":
       return (
-        <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-none flex gap-1 items-center">
+        <Badge className="flex items-center gap-1 border border-emerald-500/35 bg-emerald-500/15 text-emerald-950 hover:bg-emerald-500/15 dark:text-emerald-100">
           <CheckCircle2 className="h-3 w-3" /> Passed
         </Badge>
       );
     case "failed":
       return (
-        <Badge className="bg-rose-100 text-rose-800 hover:bg-rose-100 border-none flex gap-1 items-center">
+        <Badge className="flex items-center gap-1 border border-rose-500/35 bg-rose-500/15 text-rose-950 hover:bg-rose-500/15 dark:text-rose-100">
           <XCircle className="h-3 w-3" /> Failed
         </Badge>
       );
     case "idle":
     default:
       return (
-        <Badge variant="secondary" className="text-gray-600">
+        <Badge variant="secondary" className="text-muted-foreground">
           Queued
         </Badge>
       );

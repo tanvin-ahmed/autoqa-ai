@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { CheckCircle2 } from "lucide-react";
 
+import PricingFlashMessages from "@/components/custom/pricing/PricingFlashMessages";
+import SubscribeProButton from "@/components/custom/pricing/SubscribeProButton";
 import { PageContainer } from "@/components/custom/share/page-container";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,7 +52,7 @@ const tiers = [
     bullets: [
       "10× monthly headroom versus free trial allotment",
       "Priority-fit for recurring generation + execution bursts",
-      "Stripe-ready path when billing is flipped on",
+      "Powered by Stripe Checkout — monthly quota renews each paid invoice",
     ],
     cta: { href: "/sign-up", label: "Subscribe · $30/mo" },
     highlight: true,
@@ -74,6 +77,9 @@ export default function PricingPage() {
   return (
     <main className="grow">
       <PageContainer className="py-12 sm:py-16">
+        <Suspense fallback={null}>
+          <PricingFlashMessages />
+        </Suspense>
         <div className="max-w-2xl space-y-3">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.32em] text-primary">
             ::pricing_signal
@@ -153,20 +159,27 @@ export default function PricingPage() {
               </CardHeader>
 
               <CardFooter className="relative z-10 mt-auto border-t border-border/70 bg-muted/35 px-6 py-5 backdrop-blur-sm dark:bg-muted/25">
-                <Button
-                  asChild
-                  size="lg"
-                  variant={tier.highlight ? "default" : "outline"}
-                  className={cn(
-                    "w-full font-mono text-sm tracking-wide shadow-[0_12px_40px_-20px_rgb(79_70_229_/_0.6)] motion-safe:transition-transform motion-safe:active:translate-y-[1px]",
-                    tier.highlight &&
+                {tier.highlight ? (
+                  <SubscribeProButton
+                    variant="default"
+                    className={cn(
+                      "shadow-[0_12px_40px_-20px_rgb(79_70_229_/_0.6)] motion-safe:transition-transform motion-safe:active:translate-y-[1px]",
                       "bg-primary text-primary-foreground shadow-[0_16px_48px_-18px_rgb(99_102_241_/_0.52)] hover:bg-primary/90",
-                    !tier.highlight &&
+                    )}
+                  />
+                ) : (
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className={cn(
+                      "w-full font-mono text-sm tracking-wide shadow-[0_12px_40px_-20px_rgb(79_70_229_/_0.6)] motion-safe:transition-transform motion-safe:active:translate-y-[1px]",
                       "border-primary/35 bg-background/80 hover:border-primary/55 hover:bg-muted/60 dark:bg-card/70",
-                  )}
-                >
-                  <Link href={tier.cta.href}>{tier.cta.label}</Link>
-                </Button>
+                    )}
+                  >
+                    <Link href={tier.cta.href}>{tier.cta.label}</Link>
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           ))}

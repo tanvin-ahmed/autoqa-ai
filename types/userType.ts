@@ -4,4 +4,6 @@ export type TUserDetails = {
   email: string;
   createdAt: Date;
   credits: number;
+  /** Present after the user has started Stripe Checkout at least once. */
+  stripeCustomerId: string | null;
 };

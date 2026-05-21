@@ -15,6 +15,24 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   credits: integer("credits").default(1000).notNull(),
+  /** Stable Stripe Customer id (`cus_*`) attached at first checkout / portal setup. */
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+});
+
+export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
+  id: serial("id").primaryKey(),
+  /** Stripe event id (`evt_*`) — used for idempotent fulfillment. */
+  eventId: varchar("event_id", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * One row per Stripe business object fulfilled (invoice or Checkout session).
+ * Prevents duplicate credit grants across webhook retries and concurrent deliveries.
+ */
+export const stripeFulfillmentClaims = pgTable("stripe_fulfillment_claims", {
+  fulfillmentKey: varchar("fulfillment_key", { length: 512 }).primaryKey(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const repositories = pgTable("repositories", {

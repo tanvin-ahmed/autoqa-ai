@@ -1,10 +1,12 @@
 import WorkspaceBody from "@/components/custom/workspace/WorkspaceBody";
-import React from "react";
+import { Suspense } from "react";
 
 const WorkspacePage = () => {
   return (
     <div>
-      <WorkspaceBody />
+      <Suspense fallback={null}>
+        <WorkspaceBody />
+      </Suspense>
     </div>
   );
 };
