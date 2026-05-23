@@ -16,14 +16,32 @@ import {
   TestTube2,
 } from "lucide-react";
 
+import { JsonLdScript } from "@/components/seo/json-ld-script";
 import { LandingFAQ } from "@/components/custom/marketing/LandingFAQ";
 import { PageContainer } from "@/components/custom/share/page-container";
 import { Button } from "@/components/ui/button";
+import { landingFaqItems } from "@/lib/marketing/faq-content";
+import {
+  buildFaqPageSchema,
+  buildSoftwareApplicationSchema,
+  stringifyJsonLd,
+} from "@/lib/seo/json-ld";
+import { SITE_KEYWORDS } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
   title: "Auto QA — Futuristic reliability lab for JS & TS repos",
   description:
     "JavaScript & TypeScript projects only—including typical MERN stacks. AI-assisted test generation, deterministic runners, assertions in view—Vitest, Jest, Playwright, Cypress.",
+  keywords: SITE_KEYWORDS.split(", "),
+  alternates: { canonical: "/" },
+  openGraph: {
+    url: "/",
+    title:
+      "Auto QA — Futuristic reliability lab for JavaScript & TypeScript repos",
+    description:
+      "AI-assisted QA for JS/TS and MERN-style apps — GitHub-connected scenarios, Gemini generation, deterministic runners.",
+    type: "website",
+  },
 };
 
 const workflowSteps = [
@@ -87,6 +105,12 @@ const featureTiles = [
 export default function HomePage() {
   return (
     <>
+      <JsonLdScript
+        json={stringifyJsonLd([
+          buildSoftwareApplicationSchema(),
+          buildFaqPageSchema([...landingFaqItems]),
+        ])}
+      />
       <main id="main-content">
         {/* Hero */}
         <section className="relative isolate overflow-hidden border-b border-primary/25 bg-muted/25 dark:border-primary/20 dark:bg-muted/60">

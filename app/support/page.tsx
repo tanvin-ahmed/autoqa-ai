@@ -3,11 +3,21 @@ import Link from "next/link";
 
 import { PageContainer } from "@/components/custom/share/page-container";
 import { Button } from "@/components/ui/button";
+import { SITE_KEYWORDS, SITE_SHORT_NAME } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
   title: "Support",
   description:
-    "Contact Auto QA: email, FAQs, workspace. JS, TypeScript, and MERN repos only.",
+    "Contact Auto QA AI for workspace, OAuth, Stripe billing, credits, or failing hosted runs — JavaScript and TypeScript (MERN) repos only.",
+  keywords: SITE_KEYWORDS.split(", "),
+  alternates: { canonical: "/support" },
+  openGraph: {
+    url: "/support",
+    title: `${SITE_SHORT_NAME} — Support`,
+    description:
+      "Get help with Auto QA AI: GitHub connection, Clerk sign-in, credits, and QA automation.",
+    type: "website",
+  },
 };
 
 export default function SupportPage() {

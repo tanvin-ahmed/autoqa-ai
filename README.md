@@ -44,6 +44,17 @@ Configuration reference: **`.env.example`**.
 
 ---
 
+## SEO (built-in)
+
+- **`NEXT_PUBLIC_APP_URL`** should be your **deployed origin** (e.g. production Vercel URL). It powers canonical URLs, Open Graph `metadataBase`, `/sitemap.xml`, `/robots.txt`, and JSON-LD `@id` values.
+- Dynamic **social previews**: `app/opengraph-image.tsx`, `app/twitter-image.tsx` (Open Graph + Twitter `summary_large_image`).
+- **`app/manifest.ts`** serves a web app manifest for install UX.
+- **JSON-LD**: Organization + WebSite on every page; the homepage adds **SoftwareApplication** + **FAQPage** (see `lib/seo/json-ld.ts` and `lib/marketing/faq-content.ts`).
+- **Indexing**: Workspace and Clerk auth pages use **`noindex`**; `robots.txt` also disallows `/api/*`.
+- Optional: **`NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`**, **`NEXT_PUBLIC_TWITTER_SITE`** in `.env`.
+
+---
+
 ## Local development
 
 ```bash

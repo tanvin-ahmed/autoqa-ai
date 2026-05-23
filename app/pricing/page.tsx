@@ -15,11 +15,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  SITE_KEYWORDS,
+  SITE_SHORT_NAME,
+} from "@/lib/seo/site";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Auto QA pricing: free trial with 1,000 tokens, $30/mo Pro with monthly tokens, Enterprise via our team.",
+    "Auto QA AI pricing: free trial with starter tokens, Pro at $30/mo with monthly tokens, Enterprise via our team. JavaScript · TypeScript · MERN repos only.",
+  keywords: SITE_KEYWORDS.split(", "),
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    url: "/pricing",
+    title: `${SITE_SHORT_NAME} — Pricing`,
+    description:
+      "Token-based plans for AI test generation and hosted Browserless execution.",
+    type: "website",
+  },
 };
 
 const tiers = [
